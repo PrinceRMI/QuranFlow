@@ -3,6 +3,7 @@
 @using System.Threading
 @using System.Net.Http.Json
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
 
 <MudPaper Class="pa-4" Elevation="2" Style="width: 400px; margin: auto;">
 
@@ -18,97 +19,371 @@
                              MaxItems="114" />
         </MudItem>
         <MudItem xs="3">
-            <MudNumericField T="int" Label="Ayah" Dense="true" @bind-Value="SelectedAyah" Min="1" Max="@MaxAyahNumber" />
+            <MudNumericField T="int" 
+                             Label="Ayah" 
+                             Dense="true" 
+                             Value="SelectedAyah" 
+                             ValueChanged="OnAyahChanged" 
+                             Min="1" 
+                             Max="@MaxAyahNumber" />
         </MudItem>
-        <MudItem xs="1" Style="text-align: right;">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TranslateText" StartIcon="@Icons.Material.Filled.Translate">
+        <MudItem xs="3" Style="">
+            <MudButton Variant="Variant.Filled" Size="Size.Small" 
+                       Color="@(ShowTranslation ? Color.Success : Color.Primary)" 
+                       OnClick="ToggleTranslation" 
+                       StartIcon="@Icons.Material.Filled.Translate">
             </MudButton>
         </MudItem>
     </MudGrid>
 
     <MudDivider Class="my-4" />
-    <div style="text-align: right; font-family: 'Amiri', serif; font-size: 20px; line-height: 2;">
-        ﷽
-        <br />
-        اللّهُ لَا إِلَـٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...
+    <div style="text-align: center;">
+        @if (!string.IsNullOrEmpty(PngUrl))
+        {
+            <img src="@PngUrl" alt="Selected Ayah Image" style="max-width: 100%; height: auto;" />
+        }
     </div>
 
     <!-- Translation Section -->
-    <MudDivider Class="my-4" />
-    <div style="font-size: 14px; line-height: 1.8;">
-        Аллоҳ Ундан ўзга илоҳ йўқ зотдир. У тирик ва қоимдир...
-    </div>
+    @if (ShowTranslation && !string.IsNullOrEmpty(TranslationText))
+    {
+        <MudDivider Class="my-4" />
+        <div style="font-size: 14px; line-height: 1.8;">
+            @TranslationText
+        </div>
+    }
 
     <!-- Controls Section -->
     <MudDivider Class="my-4" />
     <MudGrid AlignItems="Center" JustifyContent="Center">
+        <!-- Play -->
         <MudItem>
-            <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" />
+            <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" 
+                           Color="Color.Primary" 
+                           OnClick="PlayAudio" 
+                           Disabled="IsPlaying" />
         </MudItem>
+        <!-- Stop -->
         <MudItem>
-            <MudIconButton Icon="@Icons.Material.Filled.Repeat" Color="Color.Primary" />
+            <MudIconButton Icon="@Icons.Material.Filled.Stop" 
+                           Color="Color.Primary" 
+                           OnClick="StopAudio" 
+                           Disabled="!IsPlaying" />
         </MudItem>
+        <!-- Toggle Mode (Default, Repeat, AutoNext) -->
         <MudItem>
-            <MudIconButton Icon="@Icons.Material.Filled.VolumeUp" Color="Color.Primary" />
+            <MudTooltip Text="@($"Mode: {_playMode}")">
+                <MudIconButton Icon="@ModeIcon" 
+                               Color="Color.Primary" 
+                               OnClick="TogglePlayMode" />
+            </MudTooltip>
         </MudItem>
     </MudGrid>
 
 </MudPaper>
 
 @code {
-    private int SelectedAyah = 1;        // Default value for Ayah
-    private string _state;              // Selected surah name
-    private int MaxAyahNumber = 1;      // Maximum Ayah number for the selected surah
+    private int SelectedAyah = 1;
+    private string _state { get; set; } = string.Empty;
+    private int MaxAyahNumber = 1;
+    private string TranslationText { get; set; } = string.Empty;
+    private string PngUrl { get; set; } = string.Empty;
+    private bool ShowTranslation = false;
+    private bool IsPlaying = false;
 
+    // Tanlangan suraning raqami (1..114)
+    private int SelectedSurahNumber = 1;
+
+    // O'sha suraning to'liq (ar.alafasy) ma'lumotini shu yerda saqlaymiz
+    private SurahData? _currentAlafasySurah = null;
+
+    // Rejimlar
+    private PlayMode _playMode = PlayMode.Default;
+    private enum PlayMode
+    {
+        Default,
+        Repeat,
+        AutoNext
+    }
+
+    // Rejimga qarab ikonka
+    private string ModeIcon => _playMode switch
+    {
+        PlayMode.Default => Icons.Material.Filled.FilterNone,
+        PlayMode.Repeat => Icons.Material.Filled.Repeat,
+        PlayMode.AutoNext => Icons.Material.Filled.SkipNext,
+        _ => Icons.Material.Filled.FilterNone
+    };
+
+    // 1) Sura izlash (autocomplete) 
     private async Task<IEnumerable<string>> Search(string value, CancellationToken token)
     {
-        // API URL
         var apiUrl = "https://api.alquran.cloud/v1/surah";
-
-        // Call API and get the response
         var response = await Http.GetFromJsonAsync<ApiResponse>(apiUrl, token);
-
-        // Return only surah names (Arabic names)
         return response?.Data?.Select(surah => surah.EnglishName) ?? Enumerable.Empty<string>();
     }
 
+    // 2) Sura tanlanganda
     private async Task OnSurahSelected(string surahName)
     {
         _state = surahName;
 
-        // API URL
+        // a) Suraning umumiy ro'yxatidan ( /v1/surah ) qaysi raqam ekanini topamiz
         var apiUrl = "https://api.alquran.cloud/v1/surah";
-
-        // Fetch surah data to find the max number of Ayahs
         var response = await Http.GetFromJsonAsync<ApiResponse>(apiUrl);
-        var selectedSurah = response?.Data?.FirstOrDefault(surah => surah.EnglishName == surahName);
+        var selectedSurah = response?.Data?.FirstOrDefault(s => s.EnglishName == surahName);
 
         if (selectedSurah != null)
         {
+            SelectedSurahNumber = selectedSurah.Number;
             MaxAyahNumber = selectedSurah.NumberOfAyahs;
-            SelectedAyah = 1; // Reset to 1 for a new surah
+            SelectedAyah = 1;
+
+            // b) Shu suraning ar.alafasy turini yuklab, audio URL larni saqlaymiz
+            await LoadAlafasySurah(SelectedSurahNumber);
+
+            // c) Rasmi + tarjimani ko'rish uchun (1-oyat) yuklash
+            await LoadAyah(SelectedSurahNumber);
         }
     }
-    private void TranslateText()
+
+    // 3) Oyat raqami tanlanganda
+    private async Task OnAyahChanged(int ayahNumber)
     {
-        // Translation logic will be added here
+        if (ayahNumber >= 1 && ayahNumber <= MaxAyahNumber)
+        {
+            SelectedAyah = ayahNumber;
+            await LoadAyah(SelectedSurahNumber);
+        }
     }
 
-    // Classes for deserialization
+    // Shu suraning ar.alafasy ma'lumotini yuklash (har oyat uchun Audio URL) 
+    private async Task LoadAlafasySurah(int surahNumber)
+    {
+        // Masalan: https://api.alquran.cloud/v1/surah/2/ar.alafasy
+        var url = $"https://api.alquran.cloud/v1/surah/{surahNumber}/ar.alafasy";
+        var resp = await Http.GetFromJsonAsync<SurahAlafasyResponse>(url);
+        if (resp?.Data != null)
+        {
+            _currentAlafasySurah = resp.Data;
+        }
+        else
+        {
+            _currentAlafasySurah = null;
+        }
+    }
+
+    // 4) Tanlangan oyatni yuklab, rasmini va tarjimasini olish
+    private async Task LoadAyah(int surahNumber)
+    {
+        // a) Oyatning PNG rasmini olish
+        PngUrl = $"https://cdn.islamic.network/quran/images/{surahNumber}_{SelectedAyah}.png";
+
+        // b) Tarjima (uz.sodik)
+        var translationUrl = $"https://api.alquran.cloud/v1/ayah/{surahNumber}:{SelectedAyah}/uz.sodik";
+        var translationResponse = await Http.GetFromJsonAsync<AyahResponse>(translationUrl);
+        TranslationText = translationResponse?.Data?.Text ?? "";
+    }
+
+    private void ToggleTranslation()
+    {
+        ShowTranslation = !ShowTranslation;
+    }
+
+    // 5) Audio ijro etish
+    private async Task PlayAudio()
+    {
+        IsPlaying = true;
+
+        // Agar _currentAlafasySurah ma'lumot yuklangan bo'lsa, aniq audio manzilni olamiz
+        if (_currentAlafasySurah != null 
+            && _currentAlafasySurah.Ayahs.Count >= SelectedAyah)
+        {
+            // Har bir oyat uchun alohida `Audio` manzili bor
+            var audioUrl = _currentAlafasySurah.Ayahs[SelectedAyah - 1].Audio;
+
+            // .NET obyekti
+            var objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("audioPlayer.playAudio", audioUrl, objRef);
+        }
+        else
+        {
+            // Fallback: (oldingidek) islomic.network link
+            // (Agar alafasy yuklanmagan bo'lsa, shu eski usul)
+            var fallbackUrl = $"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{SelectedAyah}.mp3";
+
+            var objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("audioPlayer.playAudio", fallbackUrl, objRef);
+        }
+    }
+
+    // 6) Audio to'xtatish
+    private void StopAudio()
+    {
+        IsPlaying = false;
+        JSRuntime.InvokeVoidAsync("audioPlayer.stopAudio");
+    }
+
+    // 7) Rejim (Default->Repeat->AutoNext) o'zgartirish
+    private void TogglePlayMode()
+    {
+        switch (_playMode)
+        {
+            case PlayMode.Default:
+                _playMode = PlayMode.Repeat;
+                break;
+            case PlayMode.Repeat:
+                _playMode = PlayMode.AutoNext;
+                break;
+            default:
+                _playMode = PlayMode.Default;
+                break;
+        }
+    }
+
+    // 8) Audio tugashi bilan JS -> C# 
+    [JSInvokable]
+    public async Task OnAudioEnded()
+    {
+        IsPlaying = false;
+
+        switch (_playMode)
+        {
+            case PlayMode.Default:
+                // Tugab to'xtasin
+                break;
+
+            case PlayMode.Repeat:
+                // O'sha oyatni qayta ijro
+                await PlayAudio();
+                break;
+
+            case PlayMode.AutoNext:
+                // Keyingi oyat (sura tugasa, keyingi sura):
+                await GoNextAyah();
+                break;
+        }
+    }
+
+    // 9) Keyingi oyatga o'tish (AutoNext rejimida)
+    private async Task GoNextAyah()
+    {
+        if (SelectedAyah < MaxAyahNumber)
+        {
+            SelectedAyah++;
+            await LoadAyah(SelectedSurahNumber);
+            await PlayAudio();
+        }
+        else
+        {
+            if (SelectedSurahNumber < 114)
+            {
+                SelectedSurahNumber++;
+
+            }
+            else
+            {
+                // 114dan keyin yana 1
+                SelectedSurahNumber = 1;
+            }
+            await OnSurahSelectedByNumber(SelectedSurahNumber);
+            await PlayAudio();
+        }
+        StateHasChanged();
+
+    }
+
+    // 10) Sura raqami orqali tanlanganda
+    private async Task OnSurahSelectedByNumber(int surahNumber)
+    {
+        // 1) Avval sura ro'yxatidan topib, MaxAyahNumber o'rnatamiz
+        var apiUrl = "https://api.alquran.cloud/v1/surah";
+        var response = await Http.GetFromJsonAsync<ApiResponse>(apiUrl);
+        var selectedSurah = response?.Data?.FirstOrDefault(x => x.Number == surahNumber);
+
+        if (selectedSurah != null)
+        {
+            _state = selectedSurah.EnglishName;
+            MaxAyahNumber = selectedSurah.NumberOfAyahs;
+            SelectedAyah = 1;
+
+            // 2) ar.alafasy turini yuklab, audio URL larni saqlash
+            await LoadAlafasySurah(surahNumber);
+
+            // 3) 1-oyat rasmini va tarjimasini yuklash
+            await LoadAyah(surahNumber);
+        }
+    }
+
+    // *** API modellari ***
+
+    // (a) Umumiy /v1/surah API'dan foydalanish uchun
     public class ApiResponse
     {
         public int Code { get; set; }
-        public string Status { get; set; }
-        public List<Surah> Data { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public List<Surah> Data { get; set; } = new List<Surah>();
     }
 
     public class Surah
     {
         public int Number { get; set; }
-        public string Name { get; set; }
-        public string EnglishName { get; set; }
-        public string EnglishNameTranslation { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string EnglishName { get; set; } = string.Empty;
+        public string EnglishNameTranslation { get; set; } = string.Empty;
         public int NumberOfAyahs { get; set; }
-        public string RevelationType { get; set; }
+        public string RevelationType { get; set; } = string.Empty;
+    }
+
+    // (b) /v1/ayah/{surah}:{ayah}/uz.sodik natijasi
+    public class AyahResponse
+    {
+        public int Code { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public Ayah Data { get; set; } = new Ayah();
+    }
+
+    public class Ayah
+    {
+        public int Number { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    // (c) /v1/surah/{surah}/ar.alafasy natijasi
+    public class SurahAlafasyResponse
+    {
+        public int Code { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public SurahData? Data { get; set; }
+    }
+
+    public class SurahData
+    {
+        public int Number { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string EnglishName { get; set; } = string.Empty;
+        public string EnglishNameTranslation { get; set; } = string.Empty;
+        public int NumberOfAyahs { get; set; }
+        public string RevelationType { get; set; } = string.Empty;
+        public Edition Edition { get; set; } = new Edition();
+        public List<AlafasyAyah> Ayahs { get; set; } = new List<AlafasyAyah>();
+    }
+
+    public class Edition
+    {
+        public string Identifier { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string EnglishName { get; set; } = string.Empty;
+        public string Format { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+    }
+
+    public class AlafasyAyah
+    {
+        public int Number { get; set; }
+        public string Audio { get; set; } = string.Empty;
+        public List<string> AudioSecondary { get; set; } = new List<string>();
+        public string Text { get; set; } = string.Empty;
     }
 }

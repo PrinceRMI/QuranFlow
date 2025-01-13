@@ -30,6 +30,37 @@
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script>
+        window.audioPlayer = {
+            audio: null,
+
+            playAudio: function (url, dotnetObjRef) {
+                // Avvalgi audio bo'lsa, to'xtatamiz
+                if (this.audio) {
+                    this.audio.pause();
+                    this.audio.currentTime = 0;
+                }
+                // Yangi audio
+                this.audio = new Audio(url);
+
+                // Tugaganda C# tarafga xabar berish
+                this.audio.onended = function () {
+                    dotnetObjRef.invokeMethodAsync('OnAudioEnded');
+                };
+
+                // Ijro
+                this.audio.play();
+            },
+
+            stopAudio: function () {
+                if (this.audio) {
+                    this.audio.pause();
+                    this.audio.currentTime = 0;
+                    this.audio = null;
+                }
+            }
+        };
+    </script>
 </body>
 
 </html>
