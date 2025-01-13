@@ -44,7 +44,6 @@
         }
     </div>
 
-    <!-- Translation Section -->
     @if (ShowTranslation && !string.IsNullOrEmpty(TranslationText))
     {
         <MudDivider Class="my-4" />
@@ -53,24 +52,20 @@
         </div>
     }
 
-    <!-- Controls Section -->
     <MudDivider Class="my-4" />
     <MudGrid AlignItems="Center" JustifyContent="Center">
-        <!-- Play -->
         <MudItem>
             <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" 
                            Color="Color.Primary" 
                            OnClick="PlayAudio" 
                            Disabled="IsPlaying" />
         </MudItem>
-        <!-- Stop -->
         <MudItem>
             <MudIconButton Icon="@Icons.Material.Filled.Stop" 
                            Color="Color.Primary" 
                            OnClick="StopAudio" 
                            Disabled="!IsPlaying" />
         </MudItem>
-        <!-- Toggle Mode (Default, Repeat, AutoNext) -->
         <MudItem>
             <MudTooltip Text="@($"Mode: {_playMode}")">
                 <MudIconButton Icon="@ModeIcon" 
@@ -91,13 +86,10 @@
     private bool ShowTranslation = false;
     private bool IsPlaying = false;
 
-    // Tanlangan suraning raqami (1..114)
     private int SelectedSurahNumber = 1;
 
-    // O'sha suraning to'liq (ar.alafasy) ma'lumotini shu yerda saqlaymiz
     private SurahData? _currentAlafasySurah = null;
 
-    // Rejimlar
     private PlayMode _playMode = PlayMode.Default;
     private enum PlayMode
     {
@@ -106,7 +98,6 @@
         AutoNext
     }
 
-    // Rejimga qarab ikonka
     private string ModeIcon => _playMode switch
     {
         PlayMode.Default => Icons.Material.Filled.FilterNone,
@@ -115,7 +106,6 @@
         _ => Icons.Material.Filled.FilterNone
     };
 
-    // 1) Sura izlash (autocomplete) 
     private async Task<IEnumerable<string>> Search(string value, CancellationToken token)
     {
         var apiUrl = "https://api.alquran.cloud/v1/surah";
@@ -123,12 +113,10 @@
         return response?.Data?.Select(surah => surah.EnglishName) ?? Enumerable.Empty<string>();
     }
 
-    // 2) Sura tanlanganda
     private async Task OnSurahSelected(string surahName)
     {
         _state = surahName;
 
-        // a) Suraning umumiy ro'yxatidan ( /v1/surah ) qaysi raqam ekanini topamiz
         var apiUrl = "https://api.alquran.cloud/v1/surah";
         var response = await Http.GetFromJsonAsync<ApiResponse>(apiUrl);
         var selectedSurah = response?.Data?.FirstOrDefault(s => s.EnglishName == surahName);
@@ -139,15 +127,12 @@
             MaxAyahNumber = selectedSurah.NumberOfAyahs;
             SelectedAyah = 1;
 
-            // b) Shu suraning ar.alafasy turini yuklab, audio URL larni saqlaymiz
             await LoadAlafasySurah(SelectedSurahNumber);
 
-            // c) Rasmi + tarjimani ko'rish uchun (1-oyat) yuklash
             await LoadAyah(SelectedSurahNumber);
         }
     }
 
-    // 3) Oyat raqami tanlanganda
     private async Task OnAyahChanged(int ayahNumber)
     {
         if (ayahNumber >= 1 && ayahNumber <= MaxAyahNumber)
@@ -157,10 +142,8 @@
         }
     }
 
-    // Shu suraning ar.alafasy ma'lumotini yuklash (har oyat uchun Audio URL) 
     private async Task LoadAlafasySurah(int surahNumber)
     {
-        // Masalan: https://api.alquran.cloud/v1/surah/2/ar.alafasy
         var url = $"https://api.alquran.cloud/v1/surah/{surahNumber}/ar.alafasy";
         var resp = await Http.GetFromJsonAsync<SurahAlafasyResponse>(url);
         if (resp?.Data != null)
@@ -173,13 +156,10 @@
         }
     }
 
-    // 4) Tanlangan oyatni yuklab, rasmini va tarjimasini olish
     private async Task LoadAyah(int surahNumber)
     {
-        // a) Oyatning PNG rasmini olish
         PngUrl = $"https://cdn.islamic.network/quran/images/{surahNumber}_{SelectedAyah}.png";
 
-        // b) Tarjima (uz.sodik)
         var translationUrl = $"https://api.alquran.cloud/v1/ayah/{surahNumber}:{SelectedAyah}/uz.sodik";
         var translationResponse = await Http.GetFromJsonAsync<AyahResponse>(translationUrl);
         TranslationText = translationResponse?.Data?.Text ?? "";
@@ -190,26 +170,20 @@
         ShowTranslation = !ShowTranslation;
     }
 
-    // 5) Audio ijro etish
     private async Task PlayAudio()
     {
         IsPlaying = true;
 
-        // Agar _currentAlafasySurah ma'lumot yuklangan bo'lsa, aniq audio manzilni olamiz
         if (_currentAlafasySurah != null 
             && _currentAlafasySurah.Ayahs.Count >= SelectedAyah)
         {
-            // Har bir oyat uchun alohida `Audio` manzili bor
             var audioUrl = _currentAlafasySurah.Ayahs[SelectedAyah - 1].Audio;
 
-            // .NET obyekti
             var objRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("audioPlayer.playAudio", audioUrl, objRef);
         }
         else
         {
-            // Fallback: (oldingidek) islomic.network link
-            // (Agar alafasy yuklanmagan bo'lsa, shu eski usul)
             var fallbackUrl = $"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{SelectedAyah}.mp3";
 
             var objRef = DotNetObjectReference.Create(this);
@@ -217,14 +191,12 @@
         }
     }
 
-    // 6) Audio to'xtatish
     private void StopAudio()
     {
         IsPlaying = false;
         JSRuntime.InvokeVoidAsync("audioPlayer.stopAudio");
     }
 
-    // 7) Rejim (Default->Repeat->AutoNext) o'zgartirish
     private void TogglePlayMode()
     {
         switch (_playMode)
@@ -241,7 +213,6 @@
         }
     }
 
-    // 8) Audio tugashi bilan JS -> C# 
     [JSInvokable]
     public async Task OnAudioEnded()
     {
@@ -250,22 +221,18 @@
         switch (_playMode)
         {
             case PlayMode.Default:
-                // Tugab to'xtasin
                 break;
 
             case PlayMode.Repeat:
-                // O'sha oyatni qayta ijro
                 await PlayAudio();
                 break;
 
             case PlayMode.AutoNext:
-                // Keyingi oyat (sura tugasa, keyingi sura):
                 await GoNextAyah();
                 break;
         }
     }
 
-    // 9) Keyingi oyatga o'tish (AutoNext rejimida)
     private async Task GoNextAyah()
     {
         if (SelectedAyah < MaxAyahNumber)
@@ -283,7 +250,6 @@
             }
             else
             {
-                // 114dan keyin yana 1
                 SelectedSurahNumber = 1;
             }
             await OnSurahSelectedByNumber(SelectedSurahNumber);
@@ -293,10 +259,8 @@
 
     }
 
-    // 10) Sura raqami orqali tanlanganda
     private async Task OnSurahSelectedByNumber(int surahNumber)
     {
-        // 1) Avval sura ro'yxatidan topib, MaxAyahNumber o'rnatamiz
         var apiUrl = "https://api.alquran.cloud/v1/surah";
         var response = await Http.GetFromJsonAsync<ApiResponse>(apiUrl);
         var selectedSurah = response?.Data?.FirstOrDefault(x => x.Number == surahNumber);
@@ -307,17 +271,13 @@
             MaxAyahNumber = selectedSurah.NumberOfAyahs;
             SelectedAyah = 1;
 
-            // 2) ar.alafasy turini yuklab, audio URL larni saqlash
             await LoadAlafasySurah(surahNumber);
 
-            // 3) 1-oyat rasmini va tarjimasini yuklash
             await LoadAyah(surahNumber);
         }
     }
 
-    // *** API modellari ***
 
-    // (a) Umumiy /v1/surah API'dan foydalanish uchun
     public class ApiResponse
     {
         public int Code { get; set; }
@@ -335,7 +295,6 @@
         public string RevelationType { get; set; } = string.Empty;
     }
 
-    // (b) /v1/ayah/{surah}:{ayah}/uz.sodik natijasi
     public class AyahResponse
     {
         public int Code { get; set; }
@@ -349,7 +308,6 @@
         public string Text { get; set; } = string.Empty;
     }
 
-    // (c) /v1/surah/{surah}/ar.alafasy natijasi
     public class SurahAlafasyResponse
     {
         public int Code { get; set; }
