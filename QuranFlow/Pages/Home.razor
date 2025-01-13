@@ -5,77 +5,101 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 
-<MudPaper Class="pa-4" Elevation="2" Style="width: 400px; margin: auto;">
+<div style="
+    height:100vh;
+    background-image: url(https://images.pexels.com/photos/36704/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding-top: 2.2rem; /* ustidan biroz joy qoldirish uchun*/
+    padding-bottom: 2rem;">
 
-    <MudGrid Justify="Justify.SpaceBetween" AlignItems="Center">
-        <MudItem xs="5">
-            <MudAutocomplete T="string"
-                             Label="Sura Nomi"
-                             Value="_state"
-                             ValueChanged="OnSurahSelected"
-                             SearchFunc="@Search"
-                             Variant="Variant.Filled"
-                             ShowProgressIndicator="true"
-                             MaxItems="114" />
-        </MudItem>
-        <MudItem xs="3">
-            <MudNumericField T="int" 
-                             Label="Ayah" 
-                             Dense="true" 
-                             Value="SelectedAyah" 
-                             ValueChanged="OnAyahChanged" 
-                             Min="1" 
-                             Max="@MaxAyahNumber" />
-        </MudItem>
-        <MudItem xs="3" Style="">
-            <MudButton Variant="Variant.Filled" Size="Size.Small" 
-                       Color="@(ShowTranslation ? Color.Success : Color.Primary)" 
-                       OnClick="ToggleTranslation" 
-                       StartIcon="@Icons.Material.Filled.Translate">
-            </MudButton>
-        </MudItem>
-    </MudGrid>
+    <MudPaper Class="pa-4"
+              Elevation="2"
+              Style="
+                margin: auto;
+                max-width: 100%;
+                width: 90%;
+                margin-top: 3vh;
+                background-color: rgba(255, 248, 220, 0.9);
+                max-height: 80vh;
+                overflow-y: auto;">
 
-    <MudDivider Class="my-4" />
-    <div style="text-align: center;">
-        @if (!string.IsNullOrEmpty(PngUrl))
-        {
-            <img src="@PngUrl" alt="Selected Ayah Image" style="max-width: 100%; height: auto;" />
-        }
-    </div>
+        <MudGrid Justify="Justify.SpaceBetween" AlignItems="Center">
+            <MudItem xs="5">
+                <MudAutocomplete T="string"
+                                 Class="text-black"
+                                 Label="Sura Nomi"
+                                 Value="_state"
+                                 ValueChanged="OnSurahSelected"
+                                 SearchFunc="@Search"
+                                 Variant="Variant.Filled"
+                                 ShowProgressIndicator="true"
+                                 MaxItems="114" />
+            </MudItem>
 
-    @if (ShowTranslation && !string.IsNullOrEmpty(TranslationText))
-    {
+            <MudItem xs="3">
+                <MudNumericField T="int"
+                                 Label="Ayah"
+                                 Class="yellow-text"
+                                 Dense="true"
+                                 Value="SelectedAyah"
+                                 ValueChanged="OnAyahChanged"
+                                 Min="1"
+                                 Max="@MaxAyahNumber" />
+            </MudItem>
+
+            <MudItem xs="3">
+                <MudButton Variant="Variant.Filled" Size="Size.Small"
+                           Color="@(ShowTranslation ? Color.Success : Color.Primary)"
+                           OnClick="ToggleTranslation"
+                           StartIcon="@Icons.Material.Filled.Translate">
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
         <MudDivider Class="my-4" />
-        <div style="font-size: 14px; line-height: 1.8;">
-            @TranslationText
+        <div style="text-align: center;">
+            @if (!string.IsNullOrEmpty(PngUrl))
+            {
+                <img src="@PngUrl" alt="Selected Ayah Image" style="max-width: 100%; height: auto;" />
+            }
         </div>
-    }
 
-    <MudDivider Class="my-4" />
-    <MudGrid AlignItems="Center" JustifyContent="Center">
-        <MudItem>
-            <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" 
-                           Color="Color.Primary" 
-                           OnClick="PlayAudio" 
-                           Disabled="IsPlaying" />
-        </MudItem>
-        <MudItem>
-            <MudIconButton Icon="@Icons.Material.Filled.Stop" 
-                           Color="Color.Primary" 
-                           OnClick="StopAudio" 
-                           Disabled="!IsPlaying" />
-        </MudItem>
-        <MudItem>
-            <MudTooltip Text="@($"Mode: {_playMode}")">
-                <MudIconButton Icon="@ModeIcon" 
-                               Color="Color.Primary" 
-                               OnClick="TogglePlayMode" />
-            </MudTooltip>
-        </MudItem>
-    </MudGrid>
+        @if (ShowTranslation && !string.IsNullOrEmpty(TranslationText))
+        {
+            <MudDivider Class="my-4" />
+            <div style="font-size: 14px; line-height: 1.8; max-height: 30vh; overflow-y: auto;">
+                @TranslationText
+            </div>
+        }
 
-</MudPaper>
+        <MudGrid AlignItems="Center" JustifyContent="Center">
+            <MudItem>
+                <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                               Color="Color.Primary"
+                               OnClick="PlayAudio"
+                               Disabled="IsPlaying" />
+            </MudItem>
+            <MudItem>
+                <MudIconButton Icon="@Icons.Material.Filled.Stop"
+                               Color="Color.Primary"
+                               OnClick="StopAudio"
+                               Disabled="!IsPlaying" />
+            </MudItem>
+            <MudItem>
+                <MudTooltip Text="@($"Mode: {_playMode}")">
+                    <MudIconButton Icon="@ModeIcon"
+                                   Color="Color.Primary"
+                                   OnClick="TogglePlayMode" />
+                </MudTooltip>
+            </MudItem>
+        </MudGrid>
+
+    </MudPaper>
+</div>
+
+
 
 @code {
     private int SelectedAyah = 1;

@@ -101,3 +101,19 @@ a, .btn-link {
 code {
     color: #c02d76;
 }
+.responsive-paper {
+    max-width: 400px;
+    width: 100%;
+    margin: auto;
+    background-color: rgba(255, 248, 220, 0.9);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+    .responsive-paper {
+        /* Telefonlarda max-widthni olib tashlab, o'zingiz xohlagancha moslab olishingiz mumkin */
+        width: 95%;
+        max-height: 70vh;
+    }
+}
