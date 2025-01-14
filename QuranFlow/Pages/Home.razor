@@ -14,35 +14,36 @@
     padding-top: 2.2rem; /* ustidan biroz joy qoldirish uchun*/
     padding-bottom: 2rem;">
 
-    <MudPaper Class="pa-4"
+    <MudPaper Class="pa-4 "  
               Elevation="2"
               Style="
                 margin: auto;
                 max-width: 100%;
                 width: 90%;
                 margin-top: 3vh;
-                background-color: rgba(255, 248, 220, 0.9);
-                max-height: 80vh;
-                overflow-y: auto;">
+                background-color: rgba(255, 248, 220, 0.9) !important;
+                overflow-y: auto;
+                ">
 
-        <MudGrid Justify="Justify.SpaceBetween" AlignItems="Center">
+        <MudGrid Justify="Justify.SpaceBetween" >
             <MudItem xs="5">
                 <MudAutocomplete T="string"
-                                 Class="text-black"
+                                 Class="dark-text arabic-fd"
                                  Label="Sura Nomi"
                                  Value="_state"
+                                 IconSize="Size.Small"
                                  ValueChanged="OnSurahSelected"
                                  SearchFunc="@Search"
-                                 Variant="Variant.Filled"
+                                 Variant="Variant.Text"
                                  ShowProgressIndicator="true"
                                  MaxItems="114" />
             </MudItem>
 
             <MudItem xs="3">
                 <MudNumericField T="int"
-                                 Label="Ayah"
-                                 Class="yellow-text"
-                                 Dense="true"
+                                 Style="color: black !important;"
+                                 Label="Oyat raqami"
+                                 Class="dark-text"
                                  Value="SelectedAyah"
                                  ValueChanged="OnAyahChanged"
                                  Min="1"
@@ -62,14 +63,14 @@
         <div style="text-align: center;">
             @if (!string.IsNullOrEmpty(PngUrl))
             {
-                <img src="@PngUrl" alt="Selected Ayah Image" style="max-width: 100%; height: auto;" />
+                <img src="@PngUrl" alt="Selected Ayah Image" style="height: 100%;  width: 100%; display: block; margin: 0 auto;" />
             }
         </div>
 
         @if (ShowTranslation && !string.IsNullOrEmpty(TranslationText))
         {
             <MudDivider Class="my-4" />
-            <div style="font-size: 14px; line-height: 1.8; max-height: 30vh; overflow-y: auto;">
+            <div style="font-size: 14px; line-height: 1.8; max-height: 50vh; overflow-y: auto; color:black !important;">
                 @TranslationText
             </div>
         }
@@ -109,12 +110,13 @@
     private string PngUrl { get; set; } = string.Empty;
     private bool ShowTranslation = false;
     private bool IsPlaying = false;
-
+    
     private int SelectedSurahNumber = 1;
-
+    
     private SurahData? _currentAlafasySurah = null;
-
+    
     private PlayMode _playMode = PlayMode.Default;
+    
     private enum PlayMode
     {
         Default,
@@ -182,7 +184,7 @@
 
     private async Task LoadAyah(int surahNumber)
     {
-        PngUrl = $"https://cdn.islamic.network/quran/images/{surahNumber}_{SelectedAyah}.png";
+        PngUrl = $"https://cdn.islamic.network/quran/images/high-resolution/{surahNumber}_{SelectedAyah}.png";
 
         var translationUrl = $"https://api.alquran.cloud/v1/ayah/{surahNumber}:{SelectedAyah}/uz.sodik";
         var translationResponse = await Http.GetFromJsonAsync<AyahResponse>(translationUrl);
