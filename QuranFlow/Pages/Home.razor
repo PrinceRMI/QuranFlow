@@ -110,12 +110,13 @@
     private string PngUrl { get; set; } = string.Empty;
     private bool ShowTranslation = false;
     private bool IsPlaying = false;
-
+    
     private int SelectedSurahNumber = 1;
-
+    
     private SurahData? _currentAlafasySurah = null;
-
+    
     private PlayMode _playMode = PlayMode.Default;
+    
     private enum PlayMode
     {
         Default,
@@ -183,7 +184,7 @@
 
     private async Task LoadAyah(int surahNumber)
     {
-        PngUrl = $"https://cdn.islamic.network/quran/images/{surahNumber}_{SelectedAyah}.png";
+        PngUrl = $"https://cdn.islamic.network/quran/images/high-resolution/{surahNumber}_{SelectedAyah}.png";
 
         var translationUrl = $"https://api.alquran.cloud/v1/ayah/{surahNumber}:{SelectedAyah}/uz.sodik";
         var translationResponse = await Http.GetFromJsonAsync<AyahResponse>(translationUrl);

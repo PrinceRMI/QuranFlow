@@ -1,5 +1,7 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    scrollbar-color: #c4c4c4 transparent !important;
+    scrollbar-width: thin !important;
 }
 
 h1:focus {
@@ -112,8 +114,26 @@ code {
 
 @media (max-width: 600px) {
     .responsive-paper {
-        /* Telefonlarda max-widthni olib tashlab, o'zingiz xohlagancha moslab olishingiz mumkin */
         width: 95%;
         max-height: 70vh;
     }
+}
+.dark-text .mud-input-root,
+.dark-text .mud-input-slot,
+.dark-text .mud-input > input.mud-input-root,
+.dark-text div.mud-input-slot.mud-input-root {
+    color: black !important; /* O'zingiz xohlagan rang */
+}
+
+.arabic-fd {
+    font-size: small;
+    color: black !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    .arabic-fd {
+        color: black !important;
+    }
+
 }
