@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "QuranFlow",
   "resources": {
-    "hash": "sha256-9kaHEd/b1phzoOOmRUtn0DrTuTAxJ32CBETcvtnHbjg=",
+    "hash": "sha256-d9qzJbByK1qrNqPCMAAnKW8lnK3FPFZSrlUIv7iIX9U=",
     "jsModuleNative": {
       "dotnet.native.8.0.12.5019ia6r61.js": "sha256-B6DNRvFeCUi3jbx9uKpuj+hV9cN0KG4RdZj1FgBZwj8="
     },
@@ -35,7 +35,7 @@
       "Microsoft.JSInterop.wasm": "sha256-G5EovQxlZURFdmM9vnN4JVyIq5kUJC5BmgakAO6Krdg=",
       "Microsoft.JSInterop.WebAssembly.wasm": "sha256-2bohIT7/qEC9nPtjBrESwyddQ86eqIfABSFaK7lb55A=",
       "MudBlazor.wasm": "sha256-F5EexPxkU61yZ/0qDvOQ3bFCvuLiCxs1iSCbb8pUtSU=",
-      "QuranFlow.wasm": "sha256-E8TdXdxw2PFtuRI4+dsf4mjnHvIlJCD83AdzkHVzdyo=",
+      "QuranFlow.wasm": "sha256-YwthsGhAoEg3zch+kGaiRTkGOAd28usXpi4cDAxi9BA=",
       "System.Collections.Concurrent.wasm": "sha256-UemZUME/xmOfYDoeJ84GeoX3MBZgWKsP9mcDsJ2f1zU=",
       "System.Collections.Immutable.wasm": "sha256-j7iKpk6S9KFuRbICthuB8N27XAJqzQK3mxAxR0kGJ0o=",
       "System.Collections.wasm": "sha256-8o9P7iu5RYNgnkegzT5o85Nj6rAvxfIX7B9OqRpxkBk=",
